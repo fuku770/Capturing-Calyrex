@@ -17,8 +17,8 @@ import pyocr
 import pyocr.builders
 import re
 
-class Get_Calyrex(ImageProcPythonCommand):
-    NAME = 'Capturing Calyrex'
+class Capturing_Calyrex(ImageProcPythonCommand):
+    NAME = 'Capturing_Calyrex'
 
     def __init__(self, cam):
         super().__init__(cam)
@@ -40,15 +40,18 @@ class Get_Calyrex(ImageProcPythonCommand):
     事前準備
 
     共通準備
+    ・捕獲したいボールを一番上にする
     ・バックに「ヒメリのみ」を数十個以上用意し、バックの一番上にする
-      ウルボ捕獲の場合は50個以上推奨
+      （ウルボ捕獲の場合は50個以上）
 
 
     1. 白バドレックス
     
-    手持ち1匹目 ナットレイ
-    ・素早さ 76
-    ・技構成 [変化技（てっぺき）、 、 、 ]
+    手持ち1匹目 カビゴン
+    ・持ち物 マゴのみ
+    ・素早さ 86
+    ・HB 252 B↑S↓
+    ・技構成 [なげつける、 、 、 ]
 
     手持ち2匹目 ミミッキュ
     ・持ち物 こだわりメガネ
@@ -106,6 +109,7 @@ class Get_Calyrex(ImageProcPythonCommand):
                        アラベスクタウンの左手前の家の中にいるフランク（おじさん）に渡すともらえる
     ・食べ残し         巨人のこしかけ 北東部
     ・ヒメリのみ       4・6番道路の木、見張り塔跡地など
+    ・マゴのみ         7番道路の北の木、ナックル丘陵（中央）など
     ・サンのみ         ダイの木
 
     """
@@ -141,52 +145,64 @@ class Get_Calyrex(ImageProcPythonCommand):
             if not ret[3]:
                 self.tukamaetakazu = 0
 
-        self.gensen_Calyrex()
-
-        self.zyunbi()
-
-        henka_list = self.collect_rand()
-
-        result, seed_0, seed_1 = Calc.calc_seed(henka_list)
-
-        rng = Xoroshiro(seed_0, seed_1)
-        n = len(henka_list)*2
-        f_check = self.check_advance_critical
-        f_battle = self.battle_critical
-
-        rng.get_next_rand_sequence(n)
-        state = rng.get_state()
-        print("現在state")
-        print(hex(state[0]),hex(state[1]))
-        self.export_seed(state[0], state[1])
-
-        E, G = self.calc_hokakuritu(hp_max = 100,
-                                    hp = 100,
-                                    hosokuritu = 3,
-                                    hokakuhosei = self.hokakuhosei,
-                                    tukamaetakazu = self.tukamaetakazu)
-        
-        num = 0
         while True:
-            advance = self.find_catch_advance(rng, num, g=int(G), e=E)
-            print(f"目標消費：{advance} {n+advance}")
+            self.gensen_Calyrex()
 
-            copy = rng.deepcopy()
-            copy.get_next_rand_sequence(advance)
-            print(f"狙う乱数値：{copy.nextInt(65536)[0]}, {copy.nextInt(65536)[0]}, {copy.nextInt(65536)[0]}, {copy.nextInt(65536)[0]}, {copy.nextInt(65536)[0]}")
-   
-            result, count = f_check(rng, advance)
-            if result:
-                break
-            else:
-                num += advance+1
+            self.zyunbi()
+
+            henka_list = self.collect_rand()
+
+            result, seed_0, seed_1 = Calc.calc_seed(henka_list)
+
+            rng = Xoroshiro(seed_0, seed_1)
+            n = len(henka_list)*2
+            f_check = self.check_advance_critical
+            f_battle = self.battle_critical
+
+            rng.get_next_rand_sequence(n)
+            state = rng.get_state()
+            print("現在state")
+            print(hex(state[0]),hex(state[1]))
+            self.export_seed(state[0], state[1])
+
+            E, G = self.calc_hokakuritu(hp_max = 100,
+                                        hp = 100,
+                                        hosokuritu = 3,
+                                        hokakuhosei = self.hokakuhosei,
+                                        tukamaetakazu = self.tukamaetakazu)
             
-        f_battle(rng, advance, False, count)
+            num = 0
+            while True:
+                advance = self.find_catch_advance(rng, num, g=int(G), e=E)
+                print(f"目標消費：{advance} {n+advance}")
 
-        self.discord_image('捕獲可能です')
+                copy = rng.deepcopy()
+                copy.get_next_rand_sequence(advance)
+                print(f"狙う乱数値：{copy.nextInt(65536)[0]}, {copy.nextInt(65536)[0]}, {copy.nextInt(65536)[0]}, {copy.nextInt(65536)[0]}, {copy.nextInt(65536)[0]}")
+    
+                result, count = f_check(rng, advance)
+                if result:
+                    break
+                else:
+                    num += advance+1
+                
+            f_battle(rng, advance, False, count)
+
+            self.capture()
+            
+            if self.white_Calyrex_mode:
+                if self.check_status == 85:
+                    break
+                else:
+                    self.reset()
+            else:
+                self.check_status()
+                break
+
+        self.discord_image('捕獲完了しました')
         self.finish()
 
-    def ocr_hp(self):
+    def ocr_status(self, area=[0,0,0,0]):
         tools = pyocr.get_available_tools()
         if len(tools) == 0:
             print("OCRツールが見つかりませんでした")
@@ -197,7 +213,7 @@ class Get_Calyrex(ImageProcPythonCommand):
         img = Image.fromarray(img)
 
         #座標を指定,左,上,右,下の順
-        cropimg = img.crop((15, 664, 65, 695))
+        cropimg = img.crop((area[0], area[1], area[2], area[3]))
 
         gray = ImageOps.grayscale(cropimg)
         binary = gray.point(lambda x: 0 if x < 128 else 255, '1')  # 二値化
@@ -223,12 +239,16 @@ class Get_Calyrex(ImageProcPythonCommand):
             self.press(Button.A, wait=0.1)
             if self.white_Calyrex_mode:
                 while not self.isContainTemplate('Calyrex/Calyrex.png', threshold=0.7, show_value=False):
-                    if self.isContainTemplate('Calyrex/Ferrothorn.png', threshold=0.7, show_value=False):
-                        self.wait(1.5)
-                        self.discord_image('S0 or S1個体が出現しました')
-                        return
-                    else:
-                        pass
+                    if self.isContainTemplate('Calyrex/Snorlax.png', threshold=0.7, show_value=False):
+                        possible_s0 = True
+                        while not self.isContainTemplate('Calyrex/battle.png', threshold=0.7, show_value=False):
+                            if self.isContainTemplate('Calyrex/confusion.png', threshold=0.7, show_value=False):
+                                possible_s0 = False
+                                print('こんらん確認しました')
+                                break
+                        if possible_s0:
+                            self.discord_image('S0 or S1個体が出現しました')
+                            return
             else:
                 while not self.isContainTemplate('Calyrex/Calyrex.png', threshold=0.7, show_value=False):
                     self.wait(0.05)
@@ -238,7 +258,7 @@ class Get_Calyrex(ImageProcPythonCommand):
                 while not self.isContainTemplate('Calyrex/Drifblim.png', threshold=0.7, show_value=False):
                     self.wait(0.01)
                 while True:
-                    Drifblim_hp = self.ocr_hp()
+                    Drifblim_hp = self.ocr_status(area=[10,664,70,695])
                     if Drifblim_hp:
                         if self.bugfix:
                             print(str(Drifblim_hp))
@@ -250,7 +270,7 @@ class Get_Calyrex(ImageProcPythonCommand):
             self.reset()
 
     def zyunbi(self):
-        # ナットレイ
+        # カビゴン
         if self.white_Calyrex_mode:
             if not self.check_down(1):
                 self.irekae(1)
@@ -636,6 +656,30 @@ class Get_Calyrex(ImageProcPythonCommand):
             file.write(f"{hex(seed_0)},{hex(seed_1)}")
         print(f"seedをtxtファイルに出力しました\n{path}")
     
+    def capture(self):
+        self.press(Button.X, 0.1, 0.5)
+        self.press(Button.A, 0.1, 1.0)
+        while True:
+            self.pressRep(Button.A, 30, 0.1, 0.1)
+            self.press(Button.X, 0.1, 1.0)
+            if self.isContainTemplate('Calyrex/menu.png', 0.8):
+                return
+
+    def check_status(self):
+        count = 0
+        while not self.isContainTemplate('Calyrex/menu_pokemon.png', 0.8): 
+            self.press(Hat.RIGHT, 0.1, 0.5)
+            if count > 0 and count % 4 == 0:
+                self.press(Hat.TOP, 0.1, 0.5)
+            count += 1
+        self.press(Button.A, 0.1, 5.5)
+        self.press(Hat.TOP, 0.1, 0.3)
+        self.pressRep(Button.A, 2, 0.1, 0.3)
+        self.wait(3.0)
+        self.press(Hat.RIGHT, 0.1, 1.0)
+        speed = self.ocr_status(area=[276,385,328,420])
+        return(speed)
+
     def reset(self):
         self.press(Button.HOME, wait=1.0)
         self.press(Button.X, wait=0.5)
