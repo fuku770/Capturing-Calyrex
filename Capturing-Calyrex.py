@@ -191,7 +191,7 @@ class Capturing_Calyrex(ImageProcPythonCommand):
             self.capture()
             
             if self.white_Calyrex_mode:
-                if self.check_status == 85:
+                if self.check_status() == 85:
                     break
                 else:
                     self.reset()
