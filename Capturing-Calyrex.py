@@ -116,6 +116,12 @@ class Capturing_Calyrex(ImageProcPythonCommand):
 
     def do(self):
 
+        print("--------------------------------------\n"
+              "バドレックス厳選・捕獲  ver.1.0.1\n"
+              "Developed     by fuku\n"
+              "剣盾捕獲乱数  by T.T.様\n"
+              "--------------------------------------\n")
+
         # ウィジェット起動
         ret = self.dialogue6widget("設定", 
                                    [["Check", "S0 white Calyrex", False],
