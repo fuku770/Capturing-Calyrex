@@ -369,14 +369,14 @@ class Capturing_Calyrex(ImageProcPythonCommand):
         while True:
             if not baton:
                 self.press(Button.B,0.1,0.6)
-                if self.isContainTemplate('SWSH/battlerng/battle.png', 0.8):               
+                if self.isContainTemplate('Calyrex/battle.png', 0.8):               
                     self.press(Hat.BTM,0.1,1.0)
                     self.press(Button.A,0.1,0.5)
-                    while not self.isContainTemplate('SWSH/battlerng/irekae.png', 0.8, crop=[368, 12, 524, 188], use_gray=False):
+                    while not self.isContainTemplate('Calyrex/irekae.png', 0.8, crop=[368, 12, 524, 188], use_gray=False):
                         self.wait(0.7)
             else:
                 self.wait(0.6)
-            if self.isContainTemplate('SWSH/battlerng/irekae.png', 0.8, crop=[368, 12, 524, 188], use_gray=False):
+            if self.isContainTemplate('Calyrex/irekae.png', 0.8, crop=[368, 12, 524, 188], use_gray=False):
                 break
         self.wait(0.5)
         self.pressRep(Hat.BTM, wait=0.5, repeat=num, duration=0.1, interval=1.0)
